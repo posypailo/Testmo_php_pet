@@ -1,0 +1,22 @@
+{
+    "name": "artem/testmo_php_pet",
+    "autoload": {
+        "psr-4": {
+            "Tests\\e2e\\": "tests/e2e/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Artem Posypailo",
+            "email": "posypaylo2@gmail.com"
+        }
+    ],
+    "require": {
+        "php-webdriver/webdriver": "^1.15",
+        "monolog/monolog": "^3.8"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.5",
+        "brianium/paratest": "^7.7"
+    }
+}

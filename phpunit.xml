@@ -1,0 +1,10 @@
+<phpunit>
+    <testsuites>
+        <testsuite name="UI Tests">
+            <directory>tests/e2e</directory>
+        </testsuite>
+    </testsuites>
+    <logging>
+        <junit outputFile="reports/test-results.xml"/>
+    </logging>
+</phpunit>
