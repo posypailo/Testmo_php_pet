@@ -4,9 +4,10 @@ namespace Tests\e2e;
 
 use Tests\e2e\pages\LoginPage;
 use Tests\e2e\pages\UserProfilePage;
+use Tests\e2e\pages\JobsPage;
 
-class LoginTest extends TestBase {
-    public function testLogin() {
+class AddJobTest extends TestBase {
+    public function testAddAutomationJob() {
         $credentials = json_decode(file_get_contents(__DIR__ . '/data/credentials.json'), true);
         $email = $credentials['email'];
         $password = $credentials['password'];
@@ -17,5 +18,10 @@ class LoginTest extends TestBase {
 
         $userProfilePage = new UserProfilePage($this->driver);
         $userProfilePage->verifyHeaderTitle('Candidate AP Test');
+
+        $jobsPage = new JobsPage($this->driver);
+        $jobsPage->openPage();
+        $jobsPage->clickAddAutomationJob();
+
     }
 }

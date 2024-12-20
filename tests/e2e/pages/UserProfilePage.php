@@ -7,7 +7,13 @@ use Facebook\WebDriver\WebDriverBy;
 class UserProfilePage extends BasePage {
     private $headerTitle = '.card__header__title a';
 
-    public function getHeaderTitleText(): void {
-        $this->verifyElementText(WebDriverBy::cssSelector($this->headerTitle), "Candidate AP Test");
+    /**
+     * Verifies if the header title matches the expected text.
+     *
+     * @param string $expectedText
+     * @throws \Exception if the text does not match
+     */
+    public function verifyHeaderTitle(string $expectedText): void {
+        $this->verifyElementText(WebDriverBy::cssSelector($this->headerTitle), $expectedText);
     }
 }

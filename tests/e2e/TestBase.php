@@ -37,13 +37,14 @@ class TestBase extends TestCase {
      */
     protected function tearDown(): void {
         $testName = $this->name();
+        $timestamp = (new \DateTime())->format('Y-m-d_H-i-s');
         $screenshotCaptured = false;
     
         try {
             $testFailed = $this->status()->isFailure() || $this->status()->isError();
     
             if ($testFailed) {
-                $screenshotPath = "screenshots/{$testName}.png";
+                $screenshotPath = "screenshots/{$testName}_{$timestamp}.png";;
     
                 $this->logger->error("Test failed: $testName. Attempting to capture screenshot...");
                 if ($this->driver) {

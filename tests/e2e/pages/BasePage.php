@@ -24,8 +24,8 @@ class BasePage {
      * @param string $url
      */
     public function navigateTo(string $url): void {
-        $this->logger->info("Navigating to URL: $url");
         $this->driver->get($url);
+        $this->logger->info("Navigating to URL: $url");
     }
 
     /**
@@ -34,8 +34,8 @@ class BasePage {
      * @param WebDriverBy $locator
      */
     public function clickElement(WebDriverBy $locator): void {
-        $this->logger->info("Clicking on element: " . $locator->getValue());
         $this->waitUtils->waitForElementClickable($locator)->click();
+        $this->logger->info("Clicking on element: " . $locator->getValue());
     }
 
     /**
@@ -45,24 +45,36 @@ class BasePage {
      * @param string $keys
      */
     public function sendKeys(WebDriverBy $locator, string $keys): void {
-        $this->logger->info("Sending keys to element: " . $locator->getValue());
         $this->waitUtils->waitForElementVisible($locator)->sendKeys($keys);
+        $this->logger->info("Sending keys to element: " . $locator->getValue());
     }
 
     /**
-     * Verify that an element's text matches the expected text.
-     *
-     * @param WebDriverBy $locator
-     * @param string $expectedText
-     */
-    public function verifyElementText(WebDriverBy $locator, string $expectedText): void {
-        $this->logger->info("Verifying text of element: " . $locator->getValue());
-        $actualText = $this->waitUtils->waitForElementVisible($locator)->getText();
-        $this->logger->info("Expected: $expectedText, Actual: $actualText");
+    * Verifies that the text of an element matches the expected value.
+    *
+    * This method logs the actual and expected text values, performs an assertion to validate the match,
+    * and throws an exception with detailed information if the assertion fails.
+    *
+    * @param WebDriverBy $locator The locator for the element to verify.
+    * @param string $expectedText The expected text value.
+    *
+    * @throws \PHPUnit\Framework\ExpectationFailedException If the text does not match the expected value.
+    */
 
-        if ($actualText !== $expectedText) {
-            $this->logger->error("Text mismatch! Expected: $expectedText, Got: $actualText");
-            throw new \Exception("Text mismatch! Expected: $expectedText, Got: $actualText");
+    public function verifyElementText(WebDriverBy $locator, string $expectedText): void {
+        $actualText = $this->waitUtils->waitForElementVisible($locator)->getText();
+        $this->logger->info("Verifying text of element: " . $locator->getValue());
+        $this->logger->info("Expected: '$expectedText', Actual: '$actualText'");
+    
+        try {
+            \PHPUnit\Framework\Assert::assertEquals(
+                $expectedText,
+                $actualText,
+                "Text mismatch! Expected: '$expectedText', Got: '$actualText'"
+            );
+        } catch (\PHPUnit\Framework\ExpectationFailedException $e) {
+            $this->logger->error($e->getMessage());
+            throw $e;
         }
     }
 }
