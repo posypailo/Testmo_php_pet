@@ -67,3 +67,4 @@ phpunit.xml.dist
 # Lock files for PHP versions
 *.lock
 reports/
+build/

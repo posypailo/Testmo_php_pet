@@ -16,7 +16,8 @@
         "monolog/monolog": "^3.8"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.5",
-        "brianium/paratest": "^7.7"
+        "phpunit/phpunit": "^10",
+        "brianium/paratest": "^7",
+        "allure-framework/allure-phpunit": "^3.0"
     }
 }

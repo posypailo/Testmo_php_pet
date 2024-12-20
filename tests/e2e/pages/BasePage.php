@@ -50,19 +50,29 @@ class BasePage {
     }
 
     /**
-    * Verifies that the text of an element matches the expected value.
-    *
-    * This method logs the actual and expected text values, performs an assertion to validate the match,
-    * and throws an exception with detailed information if the assertion fails.
-    *
-    * @param WebDriverBy $locator The locator for the element to verify.
-    * @param string $expectedText The expected text value.
-    *
-    * @throws \PHPUnit\Framework\ExpectationFailedException If the text does not match the expected value.
-    */
+     * Get the text of an element located by a specific selector.
+     *
+     * @param WebDriverBy $locator
+     * @return string The text of the element.
+     */
+    public function getElementText(WebDriverBy $locator): string {
+        $this->logger->info("Fetching text of element: " . $locator->getValue());
+        $element = $this->waitUtils->waitForElementVisible($locator);
+        $text = $element->getText();
+        $this->logger->info("Text fetched: '$text'");
+        return $text;
+    }
 
+    /**
+     * Verifies that the text of an element matches the expected value.
+     *
+     * @param WebDriverBy $locator The locator for the element to verify.
+     * @param string $expectedText The expected text value.
+     *
+     * @throws \PHPUnit\Framework\ExpectationFailedException If the text does not match the expected value.
+     */
     public function verifyElementText(WebDriverBy $locator, string $expectedText): void {
-        $actualText = $this->waitUtils->waitForElementVisible($locator)->getText();
+        $actualText = $this->getElementText($locator); // Reuse the getElementText method
         $this->logger->info("Verifying text of element: " . $locator->getValue());
         $this->logger->info("Expected: '$expectedText', Actual: '$actualText'");
     
