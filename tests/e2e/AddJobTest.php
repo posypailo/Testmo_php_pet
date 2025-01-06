@@ -2,8 +2,7 @@
 
 namespace Tests\e2e;
 
-use Tests\e2e\pages\LoginPage;
-use Tests\e2e\pages\UserProfilePage;
+use Tests\e2e\utils\Facades;
 use Tests\e2e\pages\JobsPage;
 use Qameta\Allure\Allure;
 use Qameta\Allure\Attribute\DisplayName;
@@ -21,6 +20,9 @@ use Qameta\Allure\StepContextInterface;
 class AddJobTest extends TestBase {
     private $dropdownText;
     private $expectedText;
+    private $jobsPage;
+
+    private $jobsPage = new JobsPage($this->driver);
 
     #[DisplayName('Add Automation Job Test')]
     #[Description('This test verifies the addition of an automation job.')]
@@ -33,46 +35,35 @@ class AddJobTest extends TestBase {
     }
 
     #[DisplayName('Log in')]
-    public function logIn(StepContextInterface $context): void {
-        $credentials = json_decode(file_get_contents(__DIR__ . '/data/credentials.json'), true);
-        $email = $credentials['email'];
-        $password = $credentials['password'];
-
-        $context->parameter('Email', $email);
-
-        $loginPage = new LoginPage($this->driver);
-        $loginPage->openPage();
-        $loginPage->login($email, $password);
-
-        $userProfilePage = new UserProfilePage($this->driver);
-        $userProfilePage->verifyHeaderTitle('Candidate AP Test');
+    public function logIn(): void {
+        $facades = new Facades($this->driver);
+        $facades->authorize();
+        $facades->verifyUserProfileHeader();
     }
 
     #[DisplayName('Add Automation Job')]
     public function addAutomationJob(StepContextInterface $context): void {
-        $jobsPage = new JobsPage($this->driver);
-        $jobsPage->openPage();
-        $jobsPage->clickAddAutomationJob();
+        $this->jobsPage->openPage();
+        $this->jobsPage->clickAddAutomationJob();
 
-        $jobsPage->addJobModal->clickDropdown();
-        $jobsPage->addJobModal->clickFirstDropdownOption();
+        $this->jobsPage->addJobModal->clickDropdown();
+        $this->jobsPage->addJobModal->clickFirstDropdownOption();
 
-        $this->dropdownText = $jobsPage->addJobModal->getDropdownText();
+        $this->dropdownText = $this->jobsPage->addJobModal->getDropdownText();
         $this->expectedText = explode(' ', trim($this->dropdownText))[0];
 
         $context->parameter('Dropdown Text', $this->dropdownText);
         $context->parameter('Expected Text', $this->expectedText);
 
-        $jobsPage->addJobModal->clickAddJobButton();
+        $this->jobsPage->addJobModal->clickAddJobButton();
     }
 
     #[DisplayName('Verify Automation Job')]
     public function verifyAutomationJob(StepContextInterface $context): void {
         $context->parameter('Expected Text', $this->expectedText);
 
-        $jobsPage = new JobsPage($this->driver);
-        $jobsPage->queuedJobsTable->verifyProgressIconVisible();
-        $jobsPage->queuedJobsTable->verifyJobTitle($this->expectedText);
-        $jobsPage->queuedJobsTable->verifyConnectionTitle($this->expectedText);
+        $this->jobsPage->queuedJobsTable->verifyProgressIconVisible();
+        $this->jobsPage->queuedJobsTable->verifyJobTitle($this->expectedText);
+        $this->jobsPage->queuedJobsTable->verifyConnectionTitle($this->expectedText);
     }
 }
