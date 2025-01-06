@@ -46,94 +46,91 @@ class TestBase extends TestCase {
         $timestamp = (new \DateTime())->format('Y-m-d_H-i-s');
         $screenshotDir = "build/allure-results/screenshots";
         $videoDir = "build/allure-results/videos";
-        $screenshotCaptured = false;
-
+    
         try {
             $testFailed = $this->status()->isFailure() || $this->status()->isError();
-
-            // Ensure directories exist
-            if (!is_dir($screenshotDir)) {
-                mkdir($screenshotDir, 0777, true);
-            }
-            if (!is_dir($videoDir)) {
-                mkdir($videoDir, 0777, true);
-            }
-
-            // Capture screenshot if the test failed
-            if ($testFailed) {
+    
+            $this->ensureDirectoryExists($screenshotDir);
+            $this->ensureDirectoryExists($videoDir);
+    
+            if ($testFailed && $this->driver) {
                 $screenshotPath = "{$screenshotDir}/{$testName}_{$timestamp}.png";
-
-                if ($this->driver) {
-                    $this->driver->takeScreenshot($screenshotPath);
-                    $this->logger->info("Screenshot captured: $screenshotPath");
-
-                    if (file_exists($screenshotPath)) {
-                        $this->logger->info("Attaching screenshot to Allure report: $screenshotPath");
-                        Allure::attachmentFile('Failure Screenshot', $screenshotPath, 'image/png');
-                        $screenshotCaptured = true;
-                    } else {
-                        $this->logger->error("Screenshot file not found: $screenshotPath");
-                    }
+                $this->driver->takeScreenshot($screenshotPath);
+                $this->logger->info("Screenshot captured: $screenshotPath");
+    
+                if (file_exists($screenshotPath)) {
+                    $this->logger->info("Attaching screenshot to Allure report: $screenshotPath");
+                    Allure::attachmentFile(
+                        'Failure Screenshot', 
+                        realpath($screenshotPath), 
+                        'image/png'
+                    );
                 } else {
-                    $this->logger->error("WebDriver instance is not available. Cannot capture screenshot.");
+                    $this->logger->error("Screenshot file not found: $screenshotPath");
                 }
             }
-
-            // Stop video recording and attach video to Allure
+    
             $this->stopVideoRecording();
+    
             if (file_exists($this->videoPath)) {
                 $this->logger->info("Attaching video to Allure report: {$this->videoPath}");
-                Allure::attachmentFile('Failure Video', $this->videoPath, 'video/mp4');
-            }
+                Allure::attachmentFile('Failure Video', realpath($this->videoPath), 'video/mp4');
+            }                 
         } catch (\Throwable $e) {
             $this->logger->error("Error during teardown: " . $e->getMessage());
         } finally {
-            try {
-                if ($this->driver) {
-                    $this->driver->quit();
-                    $this->logger->info("WebDriver session ended.");
-                }
-            } catch (\Throwable $e) {
-                $this->logger->error("Error during WebDriver teardown: " . $e->getMessage());
-            }
-
-            try {
-                parent::tearDown();
-            } catch (\Throwable $e) {
-                $this->logger->error("Error in parent tearDown: " . $e->getMessage());
-            }
+            if ($this->driver) $this->driver->quit();
+            parent::tearDown();
         }
     }
+
+    private function ensureDirectoryExists(string $dir): void {
+        if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+            $this->logger->error("Failed to create directory: {$dir}");
+            throw new \RuntimeException("Directory creation failed: {$dir}");
+        }
+    }    
 
     /**
      * Start video recording using ffmpeg.
      */
     private function startVideoRecording(): void {
-        $this->videoPath = "build/allure-results/videos/{$this->name()}.mp4";
-
-        // Command to start video recording using ffmpeg
-        $command = "ffmpeg -y -video_size 1920x1080 -f x11grab -i :0.0 -r 25 {$this->videoPath} > /dev/null 2>&1 & echo $!";
+        $videoDir = "build/allure-results/videos";
+        $this->ensureDirectoryExists($videoDir);
+    
+        $this->videoPath = "{$videoDir}/{$this->name()}.mp4";
+        $outputFile = "{$videoDir}/{$this->name()}_ffmpeg.log";
+    
+        $command = "nohup ffmpeg -y -f avfoundation -framerate 15 -pix_fmt nv12 -i 3 -vf scale=1920:1080 -c:v libx264 -preset ultrafast -crf 28 -pix_fmt yuv420p -movflags +faststart {$this->videoPath} > {$outputFile} 2>&1 & echo $!";
         $this->videoProcessId = trim(shell_exec($command));
-
-        if ($this->videoProcessId) {
+    
+        if ($this->videoProcessId && is_numeric($this->videoProcessId) && posix_kill($this->videoProcessId, 0)) {
             $this->logger->info("Video recording started: {$this->videoPath} (PID: {$this->videoProcessId})");
         } else {
-            $this->logger->error("Failed to start video recording.");
+            $this->logger->error("Failed to start video recording. Check log: {$outputFile}");
+            $this->videoProcessId = null;
         }
-    }
+    }    
 
     /**
      * Stop video recording by killing the ffmpeg process.
      */
     private function stopVideoRecording(): void {
-        if ($this->videoProcessId) {
-            exec("kill {$this->videoProcessId}", $output, $returnVar);
-
+        if ($this->videoProcessId && is_numeric($this->videoProcessId) && posix_kill($this->videoProcessId, SIGTERM)) {
+            sleep(1); // Allow ffmpeg to finalize the file
+            if (!posix_kill($this->videoProcessId, 0)) {
+                $this->logger->info("Video recording stopped gracefully: {$this->videoPath}");
+                return;
+            }
+    
+            exec("kill -9 {$this->videoProcessId}", $output, $returnVar);
             if ($returnVar === 0) {
-                $this->logger->info("Video recording stopped: {$this->videoPath}");
+                $this->logger->info("Video recording stopped forcefully: {$this->videoPath}");
             } else {
                 $this->logger->error("Failed to stop video recording (PID: {$this->videoProcessId}).");
             }
+        } else {
+            $this->logger->error("No running video recording process found.");
         }
-    }
+    }    
 }
